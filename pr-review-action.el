@@ -362,6 +362,28 @@ When invoked with prefix, prompt for head-or-base and filepath."
         (when line
           (forward-line (1- line)))))))
 
+(defun pr-review-visit-file (head-or-base filepath &optional line)
+  "Visit the file in a buffer.
+By default, view the file under current point (must in some diff).
+When invoked with prefix, prompt for head-or-base and filepath."
+  (interactive
+   (let (head-or-base filepath line)
+     (when-let* ((line-info (pr-review--get-diff-line-info (point))))
+       (setq head-or-base (if (equal (car line-info) "LEFT") 'base 'head)
+             filepath (cadr line-info)
+             line (cddr line-info)))
+     (when (or current-prefix-arg (null head-or-base) (null filepath))
+       (let ((res (completing-read "Ref: " '("head" "base") nil t)))
+         (setq head-or-base (intern res)))
+       (setq filepath (read-from-minibuffer "File path: " filepath)))
+     (list head-or-base filepath line)))
+  (when (and head-or-base filepath)
+    (let* ((tempfile filepath))
+      (with-current-buffer (find-file-other-window tempfile)
+        (goto-char (point-min))
+        (when line
+          (forward-line (1- line)))))))
+
 (defun pr-review-open-in-default-browser ()
   "Open current PR in default browser."
   (interactive)
